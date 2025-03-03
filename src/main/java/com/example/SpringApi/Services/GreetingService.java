@@ -35,7 +35,7 @@ public class GreetingService {
 
         return message;
     }
-
+//<==================================UC4=============================>
     // Save the greeting message to the database
     private void saveGreeting(String message) {
         Greeting greeting = new Greeting(message);
@@ -67,6 +67,15 @@ public class GreetingService {
         }
     }
 
+//    <===========================UC8=========================>
+    public String deleteGreeting(Long id) {
+        if (greetingRepository.existsById(id)) {
+            greetingRepository.deleteById(id); // Delete the greeting by its ID
+                return "Greeting deleted successfully!";
+            } else {
+                return "Greeting not found!";
+        }
+    }
     // Simpler method to return "Hello World" and save it
     public String getGreeting() {
         String message = "Hello World!";
