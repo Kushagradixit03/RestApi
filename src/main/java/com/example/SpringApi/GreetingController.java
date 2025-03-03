@@ -1,5 +1,6 @@
 package com.example.SpringApi;
 
+import com.example.SpringApi.GreetingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,20 +10,18 @@ public class GreetingController {
 
     private final GreetingService greetingService;
 
+    // Inject the GreetingService via constructor injection
     @Autowired
     public GreetingController(GreetingService greetingService) {
         this.greetingService = greetingService;
     }
 
-    // Endpoint that returns a simple greeting message
+    // Endpoint to handle dynamic greeting based on user attributes
     @GetMapping
-    public String getGreeting() {
-        return greetingService.getGreeting();
-    }
-
-    // Endpoint that returns a personalized greeting
-    @GetMapping("/{name}")
-    public String getPersonalizedGreeting(@PathVariable String name) {
-        return greetingService.getPersonalizedGreeting(name);
+    public String getGreeting(
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName
+    ) {
+        return greetingService.getGreeting(firstName, lastName);
     }
 }
