@@ -32,7 +32,7 @@ public class GreetingController {
             return greetingService.getGreeting();
         }
     }
-
+//<===========================UC4==========================>
     // Personalized greeting
     @GetMapping("/personalized")
     public String getPersonalizedGreeting(@RequestParam String name) {
@@ -57,5 +57,11 @@ public class GreetingController {
     @PutMapping("/{id}")
     public String updateGreeting(@PathVariable Long id, @RequestBody String newMessage) {
         return greetingService.updateGreeting(id, newMessage);  // Update greeting message
+    }
+
+//    <======================UC8=========================>
+    @DeleteMapping("/{id}")
+    public String deleteGreeting(@PathVariable Long id) {
+        return greetingService.deleteGreeting(id);  // Calls the service method to delete the greeting
     }
 }
