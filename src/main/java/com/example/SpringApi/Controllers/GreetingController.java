@@ -1,5 +1,6 @@
-package com.example.SpringApi;
+package com.example.SpringApi.Controllers;
 
+import com.example.SpringApi.Services.GreetingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,5 +34,11 @@ public class GreetingController {
     @GetMapping("/personalized")
     public String getPersonalizedGreeting(@RequestParam String name) {
         return greetingService.getPersonalizedGreeting(name);
+    }
+
+    // Endpoint to fetch a greeting message by its ID
+    @GetMapping("/{id}")
+    public String getGreetingById(@PathVariable Long id) {
+        return greetingService.getGreetingById(id);
     }
 }
