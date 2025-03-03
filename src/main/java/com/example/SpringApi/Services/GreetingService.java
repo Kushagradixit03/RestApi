@@ -1,14 +1,16 @@
-package com.example.SpringApi;
+package com.example.SpringApi.Services;
 
+import com.example.SpringApi.Entites.Greeting;
+import com.example.SpringApi.Repositories.GreetingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.Optional;
 
 @Service
 public class GreetingService {
 
     private final GreetingRepository greetingRepository;
 
-    // Inject the GreetingRepository via constructor injection
     @Autowired
     public GreetingService(GreetingRepository greetingRepository) {
         this.greetingRepository = greetingRepository;
@@ -37,6 +39,15 @@ public class GreetingService {
     private void saveGreeting(String message) {
         Greeting greeting = new Greeting(message);
         greetingRepository.save(greeting); // Save the greeting to the database
+    }
+
+    // Method to fetch a greeting by ID
+    public String getGreetingById(Long id) {
+        // Use Optional to avoid null pointer exceptions
+        Optional<Greeting> greetingOptional = greetingRepository.findById(id);
+
+        // If the greeting exists, return the message; otherwise, return a "not found" message
+        return greetingOptional.map(Greeting::getMessage).orElse("Greeting not found!");
     }
 
     // Simpler method to return "Hello World" and save it

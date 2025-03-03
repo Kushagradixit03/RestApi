@@ -1,4 +1,4 @@
-package com.example.SpringApi;
+package com.example.SpringApi.Entites;
 
 import javax.persistence.*;
 
