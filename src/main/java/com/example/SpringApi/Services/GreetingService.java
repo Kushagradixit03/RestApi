@@ -1,11 +1,11 @@
-package com.example.SpringApi;
+package com.example.SpringApi.Services;
 
 import com.example.SpringApi.Entites.Greeting;
+import com.example.SpringApi.Repositories.GreetingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
-import com.example.SpringApi.Repositories.GreetingRepository;
 
 @Service
 public class GreetingService {
@@ -41,16 +41,30 @@ public class GreetingService {
         Greeting greeting = new Greeting(message);
         greetingRepository.save(greeting); // Save the greeting to the database
     }
+//    <===============================UC5===========================>
 
     // Method to fetch a greeting by ID
     public String getGreetingById(Long id) {
         Optional<Greeting> greetingOptional = greetingRepository.findById(id);
         return greetingOptional.map(Greeting::getMessage).orElse("Greeting not found!");
     }
-
+//<======================UC6=================================>
     // Method to get all greetings
     public List<Greeting> getAllGreetings() {
         return greetingRepository.findAll(); // Returns all greetings in the repository
+    }
+//<====================UC7=================================>
+    // Method to update a greeting message by ID
+    public String updateGreeting(Long id, String newMessage) {
+        Optional<Greeting> greetingOptional = greetingRepository.findById(id);
+        if (greetingOptional.isPresent()) {
+            Greeting greeting = greetingOptional.get();
+            greeting.setMessage(newMessage); // Update the greeting message
+            greetingRepository.save(greeting); // Save the updated greeting
+            return "Greeting updated successfully!";
+        } else {
+            return "Greeting not found!";
+        }
     }
 
     // Simpler method to return "Hello World" and save it
