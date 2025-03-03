@@ -1,10 +1,11 @@
-package com.example.SpringApi.Services;
+package com.example.SpringApi;
 
 import com.example.SpringApi.Entites.Greeting;
-import com.example.SpringApi.Repositories.GreetingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.List;
 import java.util.Optional;
+import com.example.SpringApi.Repositories.GreetingRepository;
 
 @Service
 public class GreetingService {
@@ -43,11 +44,13 @@ public class GreetingService {
 
     // Method to fetch a greeting by ID
     public String getGreetingById(Long id) {
-        // Use Optional to avoid null pointer exceptions
         Optional<Greeting> greetingOptional = greetingRepository.findById(id);
-
-        // If the greeting exists, return the message; otherwise, return a "not found" message
         return greetingOptional.map(Greeting::getMessage).orElse("Greeting not found!");
+    }
+
+    // Method to get all greetings
+    public List<Greeting> getAllGreetings() {
+        return greetingRepository.findAll(); // Returns all greetings in the repository
     }
 
     // Simpler method to return "Hello World" and save it

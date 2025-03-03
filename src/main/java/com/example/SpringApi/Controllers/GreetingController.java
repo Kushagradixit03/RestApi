@@ -1,8 +1,11 @@
 package com.example.SpringApi.Controllers;
 
-import com.example.SpringApi.Services.GreetingService;
+import com.example.SpringApi.Entites.Greeting;
+import com.example.SpringApi.GreetingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/greeting")
@@ -40,5 +43,11 @@ public class GreetingController {
     @GetMapping("/{id}")
     public String getGreetingById(@PathVariable Long id) {
         return greetingService.getGreetingById(id);
+    }
+
+    // Endpoint to list all greeting messages
+    @GetMapping("/all")
+    public List<Greeting> getAllGreetings() {
+        return greetingService.getAllGreetings();  // Returns all greetings
     }
 }

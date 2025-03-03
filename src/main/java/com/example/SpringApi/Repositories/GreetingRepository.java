@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GreetingRepository extends JpaRepository<Greeting, Long> {
-
+    // The findAll() method is already provided by Spring Data JPA
 }
