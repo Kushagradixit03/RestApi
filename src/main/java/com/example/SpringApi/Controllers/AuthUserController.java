@@ -33,6 +33,7 @@ public class AuthUserController {
 //        authUserService.save(authUser);  // Save the new user
 //        return "User registered successfully!";
 //    }
+//    <============================UC9=========================================>
     @PostMapping("/register") // Ensures the endpoint only accepts POST requests
     public String registerUser(@RequestBody @Valid AuthUser authUser) {
         Optional<AuthUser> existingUser = authUserService.findByEmail(authUser.getEmail());
@@ -56,10 +57,15 @@ public class AuthUserController {
 
         return ResponseEntity.ok(Map.of("message", "Login successful!", "token", token));
     }
+
+//    <================================UC10===========================================>
     @PostMapping("/sendMail")
     public String sendMail(@RequestBody MailDTO message){
         emailService.sendEmail(message.getTo(), message.getSubject(),message.getBody());
         return "Mail sent";
     }
+
+//    <===================================UC11=========================================>
+//    Added swagger config to use (/Swagger)
 
 }
