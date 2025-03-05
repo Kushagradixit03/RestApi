@@ -1,11 +1,13 @@
 package com.example.SpringApi.Controllers;
 
+import com.example.SpringApi.DTOs.MailDTO;
 import com.example.SpringApi.Models.AuthUser;
 import com.example.SpringApi.Services.AuthUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;        
+import jakarta.validation.Valid;
+import com.example.SpringApi.Services.EmailService;
 
 import java.util.Map;
 import java.util.Optional;
@@ -13,12 +15,13 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/auth")
 public class AuthUserController {
-
+    EmailService emailService;
     private final AuthUserService authUserService;
 
     @Autowired
-    public AuthUserController(AuthUserService authUserService) {
+    public AuthUserController(AuthUserService authUserService,EmailService emailService) {
         this.authUserService = authUserService;
+        this.emailService = emailService;
     }
 //
 //    @PostMapping("/register")
@@ -52,6 +55,11 @@ public class AuthUserController {
         }
 
         return ResponseEntity.ok(Map.of("message", "Login successful!", "token", token));
+    }
+    @PostMapping("/sendMail")
+    public String sendMail(@RequestBody MailDTO message){
+        emailService.sendEmail(message.getTo(), message.getSubject(),message.getBody());
+        return "Mail sent";
     }
 
 }
