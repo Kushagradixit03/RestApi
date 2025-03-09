@@ -1,64 +1,104 @@
 package com.example.SpringApi.Services;
-
+;
+import com.example.SpringApi.DTOs.AuthUserDTO;
+import com.example.SpringApi.Interfaces.IAuthUserInterface;
 import com.example.SpringApi.Models.AuthUser;
+import com.example.SpringApi.DTOs.LoginDTO;
+import com.example.SpringApi.DTOs.PasswordDTO;
 import com.example.SpringApi.Repositories.AuthUserRepository;
-import com.example.SpringApi.Security.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class AuthUserService {
+public class AuthUserService implements IAuthUserInterface {
 
-    @Autowired
-    private AuthUserRepository authUserRepository;
+    private final AuthUserRepository userRepository;
+    EmailService emailService;
+    JwtTokenService jwtTokenService;
 
-    @Autowired(required=true)
-    private JwtUtil jwtUtil;
+    public AuthUserService(AuthUserRepository userRepository, EmailService emailService, JwtTokenService jwtTokenService) {
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+        this.jwtTokenService = jwtTokenService;
+    }
+    @Override
+    public String register(AuthUserDTO user){
 
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> user.getEmail().equals(authuser.getEmail())).collect(Collectors.toList());
 
-    // Register User
-    public String registerUser(AuthUser authUser) {
-        if (authUserRepository.existsByEmail(authUser.getEmail())) {
-            return "Email is already in use!";
+        if(l1.size()>0){
+            return "User already registered";
         }
 
-        // Encrypt password before saving
-        authUser.setPassword(passwordEncoder.encode(authUser.getPassword()));
-        authUserRepository.save(authUser);
+        //creating hashed password using bcrypt
+        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
+        String hashPass = bcrypt.encode(user.getPassword());
 
-        return "User registered successfully!";
+        //creating new user
+        AuthUser newUser = new AuthUser(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPassword(), hashPass);
+
+        //setting the new hashed password
+        newUser.setHashPass(hashPass);
+
+        //saving the user in the database
+        userRepository.save(newUser);
+
+        //sending the confirmation mail to the user
+        emailService.sendEmail(user.getEmail(), "Your Account is Ready!", "UserName : "+user.getFirstName()+" "+user.getLastName()+"\nEmail : "+user.getEmail()+"\nYou are registered!\nBest Regards,\nBridgelabz Team");
+
+        return "user registered";
     }
 
-    // Authenticate User and Generate Token
-    public  String authenticateUser(String email, String password) {
-        Optional<AuthUser> userOpt = authUserRepository.findByEmail(email);
+    @Override
+    public String login(LoginDTO user){
 
-        if (userOpt.isEmpty()) {
-            return "User not found!";
+        List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> authuser.getEmail().equals(user.getEmail())).collect(Collectors.toList());
+        if(l1.size() == 0)
+            return "User not registered";
+
+        AuthUser foundUser = l1.get(0);
+
+        //matching the stored hashed password with the password provided by user
+        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
+
+        if(!bcrypt.matches(user.getPassword(), foundUser.getHashPass()))
+            return "Invalid password";
+
+        //creating Jwt Token
+        String token = jwtTokenService.createToken(foundUser.getId());
+
+        //setting token for user login
+        foundUser.setToken(token);
+
+        //saving the current status of user in database
+        userRepository.save(foundUser);
+
+        return "user logged in"+"\ntoken : "+token;
+    }
+    @Override
+    public AuthUserDTO forgotPassword(PasswordDTO pass, String email) {
+        AuthUser foundUser = userRepository.findByEmail(email);
+
+        if (foundUser == null) {
+            System.out.println("User not found for email: " + email);
+            throw new RuntimeException("User not registered!");
         }
 
-        AuthUser user = userOpt.get();
+        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+        String hashpass = bCryptPasswordEncoder.encode(pass.getPassword());
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            return "Invalid email or password!";
-        }
+        foundUser.setPassword(pass.getPassword());
+        foundUser.setHashPass(hashpass);
 
-        // Generate JWT Token using HMAC256
-        return jwtUtil.generateToken(email);
-    }
-    // Find User by Email
-    public Optional<AuthUser> findByEmail(String email) {
-        return authUserRepository.findByEmail(email);
+        userRepository.save(foundUser);
+
+        emailService.sendEmail(email, "Password Reset Status", "Your password has been reset");
+
+        return new AuthUserDTO(foundUser.getFirstName(), foundUser.getLastName(), foundUser.getEmail(), foundUser.getPassword(), foundUser.getId());
     }
 
-    // Save New User Data
-    public AuthUser save(AuthUser authUser) {
-        // Encrypt password before saving the user data
-        authUser.setPassword(passwordEncoder.encode(authUser.getPassword()));
-        return authUserRepository.save(authUser); // Save user to the database
-    }
+
 }

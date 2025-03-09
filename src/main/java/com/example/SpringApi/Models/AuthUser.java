@@ -1,30 +1,86 @@
 package com.example.SpringApi.Models;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
-@Table(name = "auth_user")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class AuthUser {
 
+    String firstName;
+    String lastName;
+    String email;
+    String password;
+    String hashPass;
+    String token;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    Long id;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
+    public AuthUser() {
+    }
 
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
+    public AuthUser(String firstName, String lastName, String email, String password, String hashPass) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.hashPass = hashPass;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+        this.token="";
+        this.id = null;
+    }
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public Long getId() {
+        return id;
+    }
+    public void setHashPass(String hashPass) {
+        this.hashPass = hashPass;
+    }
+
+    public String getHashPass() {
+        return hashPass;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 }

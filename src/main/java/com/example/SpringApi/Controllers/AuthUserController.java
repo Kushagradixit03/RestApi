@@ -1,71 +1,57 @@
 package com.example.SpringApi.Controllers;
 
-import com.example.SpringApi.DTOs.MailDTO;
-import com.example.SpringApi.Models.AuthUser;
-import com.example.SpringApi.Services.AuthUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.SpringApi.DTOs.*;
+import com.example.SpringApi.Services.EmailService;
+import com.example.SpringApi.Interfaces.IAuthUserInterface;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-import com.example.SpringApi.Services.EmailService;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "*")
 public class AuthUserController {
-    EmailService emailService;
-    private final AuthUserService authUserService;
 
-    @Autowired
-    public AuthUserController(AuthUserService authUserService,EmailService emailService) {
-        this.authUserService = authUserService;
+    private final EmailService emailService;
+    private final IAuthUserInterface iAuthUserInterface;
+
+    public AuthUserController(EmailService emailService, IAuthUserInterface iAuthUserInterface) {
         this.emailService = emailService;
+        this.iAuthUserInterface = iAuthUserInterface;
     }
-//
-//    @PostMapping("/register")
-//    public String registerUser(@RequestBody @Valid AuthUser authUser) {
-//        Optional<AuthUser> existingUser = authUserService.findByEmail(authUser.getEmail());
-//        if (existingUser.isPresent()) {
-//            return "Email is already in use";
-//        }
-//        authUserService.save(authUser);  // Save the new user
-//        return "User registered successfully!";
-//    }
-//    <============================UC9=========================================>
-    @PostMapping("/register") // Ensures the endpoint only accepts POST requests
-    public String registerUser(@RequestBody @Valid AuthUser authUser) {
-        Optional<AuthUser> existingUser = authUserService.findByEmail(authUser.getEmail());
-        if (existingUser.isPresent()) {
-            return "Email is already in use";
+//<======================== UC9 --> For Registration and Login of a user================================>
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@Valid @RequestBody AuthUserDTO user) {
+        try {
+            String response = iAuthUserInterface.register(user);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        authUserService.save(authUser);
-        return "User registered successfully!";
-}
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
-        String token = authUserService.authenticateUser(
-                request.get("email"),
-                request.get("password")
-        );
-
-        if (token.equals("User not found!") || token.equals("Invalid email or password!")) {
-            return ResponseEntity.status(401).body(Map.of("error", token));
-        }
-
-        return ResponseEntity.ok(Map.of("message", "Login successful!", "token", token));
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginDTO user) {
+        String token = iAuthUserInterface.login(user);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User logged in successfully");
+        response.put("token", token);
+        return ResponseEntity.ok(response);
     }
-
-//    <================================UC10===========================================>
+//<=======================UC10-Sending mails===============================>
     @PostMapping("/sendMail")
-    public String sendMail(@RequestBody MailDTO message){
-        emailService.sendEmail(message.getTo(), message.getSubject(),message.getBody());
-        return "Mail sent";
+    public ResponseEntity<String> sendMail(@Valid @RequestBody MailDTO message) {
+        emailService.sendEmail(message.getTo(), message.getSubject(), message.getBody());
+        return ResponseEntity.ok("Mail sent successfully.");
     }
-
-//    <===================================UC11=========================================>
-//    Added swagger config to use (/Swagger)
-
+//<==================  //UC11- Added swagger ===============================>
+//<================== //UC12-Forgot Passward================================>
+    @PutMapping("/forgotPassword/{email}")
+    public ResponseEntity<AuthUserDTO> forgotPassword(@RequestBody PasswordDTO pass, @PathVariable String email) {
+        return ResponseEntity.ok(iAuthUserInterface.forgotPassword(pass, email));
+    }
 }

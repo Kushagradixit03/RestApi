@@ -1,67 +1,82 @@
 package com.example.SpringApi.Controllers;
 
-import com.example.SpringApi.Entites.Greeting;
-import com.example.SpringApi.Services.GreetingService;
+import com.example.SpringApi.DTOs.MessageDTO;
+import com.example.SpringApi.Interfaces.IGreetingInterface;
+import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/greeting")
+@RequestMapping("greetings")
 public class GreetingController {
 
-    private final GreetingService greetingService;
-
     @Autowired
-    public GreetingController(GreetingService greetingService) {
-        this.greetingService = greetingService;
+    IGreetingInterface iGreetingInterface;
+
+    // UC1
+    @GetMapping("/get")
+    public String getGreetings(){
+        return "{\"message\": \"Hello from GET Request!\"}";
     }
 
-    // Handle GET requests with optional query parameters for firstName and lastName
-    @GetMapping
-    public String getGreeting(
-            @RequestParam(required = false) String firstName,
-            @RequestParam(required = false) String lastName
-    ) {
-        // If both firstName and lastName are provided, delegate to the appropriate service method
-        if (firstName != null || lastName != null) {
-            return greetingService.getGreeting(firstName, lastName);
-        } else {
-            // If no parameters, return the default greeting and save it
-            return greetingService.getGreeting();
-        }
-    }
-//<===========================UC4==========================>
-    // Personalized greeting
-    @GetMapping("/personalized")
-    public String getPersonalizedGreeting(@RequestParam String name) {
-        return greetingService.getPersonalizedGreeting(name);
-    }
-//<========================UC5===============================>
-    // Endpoint to fetch a greeting message by its ID
-    @GetMapping("/{id}")
-    public String getGreetingById(@PathVariable Long id) {
-        return greetingService.getGreetingById(id);
-    }
-//<=======================UC6===============================>
-    // Endpoint to list all greeting messages
-
-    @GetMapping("/all")
-    public List<Greeting> getAllGreetings() {
-        return greetingService.getAllGreetings();  // Returns all greetings
+    @PostMapping("/post")
+    public String postGreetings(@RequestBody MessageDTO message){
+        return "{\""+message.getMessage()+": \"Hello from POST Request!\"}";
     }
 
-    // Endpoint to update a greeting message by ID
-    //<===================UC7==========================>
-    @PutMapping("/{id}")
-    public String updateGreeting(@PathVariable Long id, @RequestBody String newMessage) {
-        return greetingService.updateGreeting(id, newMessage);  // Update greeting message
+    @PutMapping("/put/{message}")
+    public String putGreetings(@PathVariable String message){
+        return "{\""+message+": \"Hello from PUT Request!\"}";
     }
 
-//    <======================UC8=========================>
-    @DeleteMapping("/{id}")
-    public String deleteGreeting(@PathVariable Long id) {
-        return greetingService.deleteGreeting(id);  // Calls the service method to delete the greeting
+    // UC2
+    @GetMapping("/service")
+    public String serviceGreetings(){
+        return iGreetingInterface.getGreetings();
+    }
+
+    // UC3
+    @GetMapping("/query")
+    public String query(@PathParam("firstName") String firstName, @PathParam("lastName") String lastName){
+        if(firstName != null && lastName != null)
+            return "Hello " + firstName + " " + lastName + " Welcome to Bridgelabz";
+        else if(firstName != null)
+            return "Hello " + firstName + " Welcome to Bridgelabz";
+        else if(lastName != null)
+            return "Hello " + lastName + " Welcome to Bridgelabz";
+        else
+            return "Hello, Welcome to Bridgelabz";
+    }
+
+    // UC4
+    @PostMapping("/save")
+    public MessageDTO save(@RequestBody MessageDTO message){
+        return iGreetingInterface.saveMessage(message);
+    }
+
+    // UC5
+    @GetMapping("/find/{id}")
+    public MessageDTO findById(@PathVariable Long id){
+        return iGreetingInterface.findById(id);
+    }
+
+    // UC6
+    @GetMapping("/listAll")
+    public List<MessageDTO> listAll(){
+        return iGreetingInterface.listAll();
+    }
+
+    // UC7
+    @PostMapping("/edit/{id}")
+    public MessageDTO editById(@RequestBody MessageDTO message, @PathVariable Long id){
+        return iGreetingInterface.editById(message, id);
+    }
+
+    // UC8
+    @DeleteMapping("/deleteGreet/{id}")
+    public String delete(@PathVariable Long id){
+        return iGreetingInterface.delete(id);
     }
 }
