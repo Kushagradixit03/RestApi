@@ -1,28 +1,43 @@
+
 package com.example.SpringApi.DTOs;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuthUserDTO {
 
-    @NotBlank(message = "First Name is required")
-    @Pattern(regexp = "^[A-Z][a-zA-Z]*$", message = "First letter must be uppercase")
-    private String firstName;
 
-    @NotBlank(message = "Last Name is required")
-    @Pattern(regexp = "^[A-Z][a-zA-Z]*$", message = "First letter must be uppercase")
-    private String lastName;
+    String firstName;
+    String lastName;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
+    @Email(message = "User email not correct")
+    @NotBlank(message = "email required")
+    String email;
 
-    @NotBlank(message = "Password is required")
-    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[@#$%^&*()-+=])(?=.*\\d).{8,}$",
-            message = "Password must contain 1 uppercase, 1 special character, 1 digit, and be at least 8 characters long")
-    private String password;
+    @NotBlank(message = "password required")
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,}$", message = "invalid password")
+    String password;
+
+
+    Long id;
+
+
+    public AuthUserDTO(String firstName, String lastName, String email, String password) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.id = null;
+    }
+
+
 }
-

@@ -1,11 +1,6 @@
 package com.example.SpringApi.Security;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.JWTVerifier;
-import org.springframework.beans.factory.annotation.Value;
+import io.jsonwebtoken.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -13,37 +8,46 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
+    private String secretKey = "mySecretKey";  // Replace with a stronger key
 
-    private static final long EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour
-
-    // Generate JWT Token using HMAC256
-    public String generateToken(String email) {
-        return JWT.create()
-                .withSubject(email)
-                .withIssuer("MyApp")
-                .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .sign(Algorithm.HMAC256(secretKey));
+    // Generate JWT Token
+    public String generateToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))  // 10 hours expiration
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
     }
 
-    // Validate JWT Token using HMAC256
-    public String validateToken(String token) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(secretKey);
-            JWTVerifier verifier = JWT.require(algorithm)
-                    .withIssuer("MyApp")
-                    .build();
+    // Extract username from JWT token
+    public String extractUsername(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
 
-            // Verify the token and get the decoded JWT
-            DecodedJWT decodedJWT = verifier.verify(token);
+    // Validate the token
+    public boolean validateToken(String token, String username) {
+        String extractedUsername = extractUsername(token);
+        return (extractedUsername.equals(username) && !isTokenExpired(token));
+    }
 
-            // Return the subject (email) if the token is valid
-            return decodedJWT.getSubject();
-        } catch (JWTVerificationException e) {
-            // If the token is invalid or expired, return an error message
-            return "Invalid or expired token";
-        }
+    // Check if the token is expired
+    private boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    // Extract expiration date of the token
+    private Date extractExpiration(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
     }
 }
