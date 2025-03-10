@@ -1,104 +1,125 @@
 package com.example.SpringApi.Services;
-;
+
 import com.example.SpringApi.DTOs.AuthUserDTO;
-import com.example.SpringApi.Interfaces.IAuthUserInterface;
-import com.example.SpringApi.Models.AuthUser;
 import com.example.SpringApi.DTOs.LoginDTO;
 import com.example.SpringApi.DTOs.PasswordDTO;
+import com.example.SpringApi.DTOs.ResetPasswordDTO;
+import com.example.SpringApi.Interfaces.IAuthUserInterface;
+import com.example.SpringApi.Models.AuthUser;
 import com.example.SpringApi.Repositories.AuthUserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthUserService implements IAuthUserInterface {
 
-    private final AuthUserRepository userRepository;
-    EmailService emailService;
-    JwtTokenService jwtTokenService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthUserService.class);
 
-    public AuthUserService(AuthUserRepository userRepository, EmailService emailService, JwtTokenService jwtTokenService) {
+    private final AuthUserRepository userRepository;
+    private final EmailService emailService;
+    private final JwtTokenService jwtTokenService;
+    private final BCryptPasswordEncoder bcrypt;
+
+    @Autowired
+    public AuthUserService(AuthUserRepository userRepository, EmailService emailService,
+                           JwtTokenService jwtTokenService, BCryptPasswordEncoder bcrypt) {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.jwtTokenService = jwtTokenService;
+        this.bcrypt = bcrypt;
     }
+
     @Override
-    public String register(AuthUserDTO user){
-
-        List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> user.getEmail().equals(authuser.getEmail())).collect(Collectors.toList());
-
-        if(l1.size()>0){
-            return "User already registered";
+    public String register(AuthUserDTO user) {
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            return "{\"error\": \"User already registered\"}";
         }
 
-        //creating hashed password using bcrypt
-        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
         String hashPass = bcrypt.encode(user.getPassword());
 
-        //creating new user
         AuthUser newUser = new AuthUser(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPassword(), hashPass);
-
-        //setting the new hashed password
-        newUser.setHashPass(hashPass);
-
-        //saving the user in the database
         userRepository.save(newUser);
 
-        //sending the confirmation mail to the user
-        emailService.sendEmail(user.getEmail(), "Your Account is Ready!", "UserName : "+user.getFirstName()+" "+user.getLastName()+"\nEmail : "+user.getEmail()+"\nYou are registered!\nBest Regards,\nBridgelabz Team");
+        emailService.sendEmail(user.getEmail(), "Your Account is Ready!",
+                "UserName: " + user.getFirstName() + " " + user.getLastName() +
+                        "\nEmail: " + user.getEmail() +
+                        "\nYou are registered!\nBest Regards,\nBridgelabz Team");
 
-        return "user registered";
+        return "{\"message\": \"User registered successfully\"}";
     }
 
     @Override
-    public String login(LoginDTO user){
-
-        List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> authuser.getEmail().equals(user.getEmail())).collect(Collectors.toList());
-        if(l1.size() == 0)
-            return "User not registered";
-
-        AuthUser foundUser = l1.get(0);
-
-        //matching the stored hashed password with the password provided by user
-        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
-
-        if(!bcrypt.matches(user.getPassword(), foundUser.getHashPass()))
-            return "Invalid password";
-
-        //creating Jwt Token
-        String token = jwtTokenService.createToken(foundUser.getId());
-
-        //setting token for user login
-        foundUser.setToken(token);
-
-        //saving the current status of user in database
-        userRepository.save(foundUser);
-
-        return "user logged in"+"\ntoken : "+token;
-    }
-    @Override
-    public AuthUserDTO forgotPassword(PasswordDTO pass, String email) {
-        AuthUser foundUser = userRepository.findByEmail(email);
+    public String login(LoginDTO user) {
+        AuthUser foundUser = userRepository.findByEmail(user.getEmail());
 
         if (foundUser == null) {
-            System.out.println("User not found for email: " + email);
-            throw new RuntimeException("User not registered!");
+            return "{\"error\": \"User not registered\"}";
         }
 
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        String hashpass = bCryptPasswordEncoder.encode(pass.getPassword());
+        if (!bcrypt.matches(user.getPassword(), foundUser.getHashPass())) {
+            return "{\"error\": \"Invalid password\"}";
+        }
 
-        foundUser.setPassword(pass.getPassword());
-        foundUser.setHashPass(hashpass);
+        String token = jwtTokenService.createToken(foundUser.getId());
 
+        foundUser.setToken(token);
+        userRepository.save(foundUser);
+
+        return "{\"message\": \"User logged in\", \"token\": \"" + token + "\"}";
+    }
+
+    @Override
+    @Transactional
+    public String forgotPassword(PasswordDTO pass, String email) {
+        logger.info("Forgot Password Request for: {}", email);
+
+        if (pass == null || pass.getPassword() == null || pass.getPassword().trim().isEmpty()) {
+            return "{\"error\": \"Password cannot be null or empty!\"}";
+        }
+
+        AuthUser foundUser = userRepository.findByEmail(email);
+        if (foundUser == null) {
+            return "{\"error\": \"User not registered!\"}";
+        }
+
+        logger.info("User Found: {}", foundUser.getEmail());
+
+        String hashPass = bcrypt.encode(pass.getPassword());
+        foundUser.setHashPass(hashPass);
         userRepository.save(foundUser);
 
         emailService.sendEmail(email, "Password Reset Status", "Your password has been reset");
 
-        return new AuthUserDTO(foundUser.getFirstName(), foundUser.getLastName(), foundUser.getEmail(), foundUser.getPassword(), foundUser.getId());
+        logger.info("Password Reset Successfully!");
+
+        return "{\"message\": \"Password reset successfully!\"}";
     }
 
+    @Override
+    @Transactional
+    public String resetPassword(String email, ResetPasswordDTO resetPasswordDTO) {
+        logger.info("Reset Password Request for: {}", email);
 
+        AuthUser foundUser = userRepository.findByEmail(email);
+        if (foundUser == null) {
+            return "{\"error\": \"User not found with email: " + email + "\"}";
+        }
+
+        if (!bcrypt.matches(resetPasswordDTO.getCurrentPassword(), foundUser.getHashPass())) {
+            return "{\"error\": \"Current password is incorrect!\"}";
+        }
+
+        String hashNewPass = bcrypt.encode(resetPasswordDTO.getNewPassword());
+        foundUser.setHashPass(hashNewPass);
+        userRepository.save(foundUser);
+
+        logger.info("Password Reset Successfully for: {}", email);
+        return "{\"message\": \"Password reset successfully!\"}";
+    }
 }

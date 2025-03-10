@@ -23,35 +23,86 @@ public class AuthUserController {
         this.emailService = emailService;
         this.iAuthUserInterface = iAuthUserInterface;
     }
-//<======================== UC9 --> For Registration and Login of a user================================>
+
+    //<======================== UC9 --> User Registration ================================>
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody AuthUserDTO user) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody AuthUserDTO user) {
+        Map<String, String> response = new HashMap<>();
         try {
-            String response = iAuthUserInterface.register(user);
+            String message = iAuthUserInterface.register(user);
+            response.put("message", message);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
 
+    //<======================== UC9 --> User Login ================================>
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginDTO user) {
-        String token = iAuthUserInterface.login(user);
         Map<String, String> response = new HashMap<>();
-        response.put("message", "User logged in successfully");
-        response.put("token", token);
+        try {
+            String token = iAuthUserInterface.login(user);
+            response.put("message", "User logged in successfully");
+            response.put("token", token);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
+
+    //<======================= UC10 - Sending Mails ===============================>
+    @PostMapping("/sendMail")
+    public ResponseEntity<Map<String, String>> sendMail(@Valid @RequestBody MailDTO message) {
+        emailService.sendEmail(message.getTo(), message.getSubject(), message.getBody());
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Mail sent successfully.");
         return ResponseEntity.ok(response);
     }
-//<=======================UC10-Sending mails===============================>
-    @PostMapping("/sendMail")
-    public ResponseEntity<String> sendMail(@Valid @RequestBody MailDTO message) {
-        emailService.sendEmail(message.getTo(), message.getSubject(), message.getBody());
-        return ResponseEntity.ok("Mail sent successfully.");
-    }
-//<==================  //UC11- Added swagger ===============================>
-//<================== //UC12-Forgot Passward================================>
+    //<==================  //UC11- Added swagger ===============================>
+
+    //<================== UC12 - Forgot Password ===============================>
     @PutMapping("/forgotPassword/{email}")
-    public ResponseEntity<AuthUserDTO> forgotPassword(@RequestBody PasswordDTO pass, @PathVariable String email) {
-        return ResponseEntity.ok(iAuthUserInterface.forgotPassword(pass, email));
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody PasswordDTO pass, @PathVariable String email) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            iAuthUserInterface.forgotPassword(pass, email);
+            response.put("message", "Password reset link sent to email.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
+
+    //<================== UC13 - Reset Password ===============================>
+    @PutMapping("/resetPassword/{email}")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @PathVariable String email,
+            @Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+
+        Map<String, String> response = new HashMap<>();
+
+        // Check if DTO fields are null or empty
+        if (resetPasswordDTO.getCurrentPassword() == null || resetPasswordDTO.getCurrentPassword().isEmpty() ||
+                resetPasswordDTO.getNewPassword() == null || resetPasswordDTO.getNewPassword().isEmpty()) {
+            response.put("error", "Current and new password cannot be null or empty!");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        try {
+            String message = iAuthUserInterface.resetPassword(email, resetPasswordDTO);
+            response.put("message", message);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (Exception e) {
+            response.put("error", "Something went wrong, please try again!");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
 }

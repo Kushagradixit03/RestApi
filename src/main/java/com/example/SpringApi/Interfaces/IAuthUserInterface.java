@@ -1,21 +1,17 @@
 package com.example.SpringApi.Interfaces;
 
-
 import com.example.SpringApi.DTOs.AuthUserDTO;
 import com.example.SpringApi.DTOs.LoginDTO;
 import com.example.SpringApi.DTOs.PasswordDTO;
-import org.springframework.stereotype.Service;
+import com.example.SpringApi.DTOs.ResetPasswordDTO;
 
-@Service
 public interface IAuthUserInterface {
 
-    public String register(AuthUserDTO user);
+    String register(AuthUserDTO user);
 
+    String login(LoginDTO user);
 
-    public String login(LoginDTO user);
+    String forgotPassword(PasswordDTO pass, String email);
 
-    public AuthUserDTO forgotPassword(PasswordDTO pass, String email);
-
-
-
+    String resetPassword(String email, ResetPasswordDTO resetPasswordDTO);
 }
